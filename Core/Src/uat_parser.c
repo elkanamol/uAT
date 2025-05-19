@@ -13,6 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 
 /**
  * @brief Check if a response contains a specific prefix
@@ -27,7 +29,8 @@ bool uAT_HasPrefix(const char *response, const char *prefix)
     {
         return false;
     }
-    return strstr(response, prefix) != NULL;
+
+    return (strncmp(response, prefix, strlen(prefix)) == 0);
 }
 
 /**
@@ -82,12 +85,19 @@ bool uAT_IsCMEError(const char *response, int *errorCode)
         return false;
     }
 
-    // Move past the prefix
+    // Move past the prefix with bounds checking
+    const char *end_of_response = response + strlen(response);
     start += strlen(prefix);
 
-    // Convert the error code
+    if (start >= end_of_response)
+    {
+        return false;
+    }
+
+    // Convert the error code with overflow checking
     char *end;
-    *errorCode = (int)strtol(start, &end, 10);
+    errno = 0;
+    long temp = strtol(start, &end, STRTOL_BASE_10);
 
     // Check if conversion was successful
     if (end == start)
@@ -95,6 +105,13 @@ bool uAT_IsCMEError(const char *response, int *errorCode)
         return false;
     }
 
+    // Check for overflow
+    if (errno == ERANGE || temp > INT_MAX || temp < INT_MIN)
+    {
+        return false;
+    }
+
+    *errorCode = (int)temp;
     return true;
 }
 
@@ -120,12 +137,19 @@ bool uAT_IsCMSError(const char *response, int *errorCode)
         return false;
     }
 
-    // Move past the prefix
+    // Move past the prefix with bounds checking
+    const char *end_of_response = response + strlen(response);
     start += strlen(prefix);
 
-    // Convert the error code
+    if (start >= end_of_response)
+    {
+        return false;
+    }
+
+    // Convert the error code with overflow checking
     char *end;
-    *errorCode = (int)strtol(start, &end, 10);
+    errno = 0;
+    long temp = strtol(start, &end, STRTOL_BASE_10);
 
     // Check if conversion was successful
     if (end == start)
@@ -133,6 +157,13 @@ bool uAT_IsCMSError(const char *response, int *errorCode)
         return false;
     }
 
+    // Check for overflow
+    if (errno == ERANGE || temp > INT_MAX || temp < INT_MIN)
+    {
+        return false;
+    }
+
+    *errorCode = (int)temp;
     return true;
 }
 
@@ -151,13 +182,16 @@ int uAT_CountDelimiters(const char *str, char delimiter)
     }
 
     int count = 0;
-    while (*str)
+    size_t max_len = strlen(str);
+    size_t i = 0;
+
+    while (i < max_len)
     {
-        if (*str == delimiter)
+        if (str[i] == delimiter)
         {
             count++;
         }
-        str++;
+        i++;
     }
     return count;
 }
@@ -175,44 +209,64 @@ uAT_ParseResult_t uAT_ParseInt(const char *response, const char *prefix,
                                char delimiter, int *value)
 {
     (void)delimiter; // Mark as intentionally unused
-    
+
     if (response == NULL || prefix == NULL || value == NULL)
     {
         return UAT_PARSE_NULL_ARG;
     }
-    
+
     // Find the prefix in the response
     const char *start = strstr(response, prefix);
     if (start == NULL)
     {
         return UAT_PARSE_PREFIX_NOT_FOUND;
     }
-    
+
     // Move past the prefix
     start += strlen(prefix);
-    
-    // Skip any whitespace
-    while (*start == ' ' || *start == '\t')
+
+    // Skip any whitespace with bounds checking
+    const char *end_of_response = response + strlen(response);
+    while (start < end_of_response && (*start == ' ' || *start == '\t'))
     {
         start++;
     }
-    
+
     // Check if we have a valid digit
-    if (*start == '\0' || (*start != '-' && *start != '+' && (*start < '0' || *start > '9')))
+    if (start >= end_of_response || (*start != '-' && *start != '+' && (*start < '0' || *start > '9')))
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
-    
-    // Convert the string to an integer
+
+    // Convert the string to an integer with overflow checking
     char *end;
-    *value = (int)strtol(start, &end, 10);
-    
+    errno = 0;
+    long temp = strtol(start, &end, STRTOL_BASE_10);
+
     // Check if conversion was successful
     if (end == start)
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
 
+    // Check for overflow/underflow
+    if (errno == ERANGE || temp > INT_MAX || temp < INT_MIN)
+    {
+        return UAT_PARSE_OVERFLOW;
+    }
+
+    // Validate that there are no unexpected characters after the number
+    while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')
+    {
+        end++;
+    }
+
+    if (*end != '\0' && *end != delimiter)
+    {
+        return UAT_PARSE_INVALID_FORMAT;
+    }
+
+    *value = (int)temp;
     return UAT_PARSE_OK;
 }
 
@@ -324,7 +378,7 @@ uAT_ParseResult_t uAT_ParseFloat(const char *response, const char *prefix,
                                  char delimiter, float *value)
 {
     (void)delimiter; // Mark as intentionally unused
-    
+
     if (response == NULL || prefix == NULL || value == NULL)
     {
         return UAT_PARSE_NULL_ARG;
@@ -340,22 +394,24 @@ uAT_ParseResult_t uAT_ParseFloat(const char *response, const char *prefix,
     // Move past the prefix
     start += strlen(prefix);
 
-    // Skip any whitespace
-    while (*start == ' ' || *start == '\t')
+    // Skip any whitespace with bounds checking
+    const char *end_of_response = response + strlen(response);
+    while (start < end_of_response && (*start == ' ' || *start == '\t'))
     {
         start++;
     }
 
     // Check if we have a valid digit or decimal point
-    if (*start == '\0' || ((*start != '-' && *start != '+' && *start != '.') &&
-                           (*start < '0' || *start > '9')))
+    if (start >= end_of_response || ((*start != '-' && *start != '+' && *start != '.') &&
+                                     (*start < '0' || *start > '9')))
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
 
-    // Convert the string to a float
+    // Convert the string to a float with overflow checking
     char *end;
-    *value = (float)strtod(start, &end);
+    errno = 0;
+    double temp = strtod(start, &end);
 
     // Check if conversion was successful
     if (end == start)
@@ -363,6 +419,24 @@ uAT_ParseResult_t uAT_ParseFloat(const char *response, const char *prefix,
         return UAT_PARSE_INVALID_FORMAT;
     }
 
+    // Check for overflow/underflow
+    if (errno == ERANGE)
+    {
+        return UAT_PARSE_OVERFLOW;
+    }
+
+    // Validate that there are no unexpected characters after the number
+    while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')
+    {
+        end++;
+    }
+
+    if (*end != '\0' && *end != delimiter)
+    {
+        return UAT_PARSE_INVALID_FORMAT;
+    }
+
+    *value = (float)temp;
     return UAT_PARSE_OK;
 }
 
@@ -379,7 +453,7 @@ uAT_ParseResult_t uAT_ParseHex(const char *response, const char *prefix,
                                char delimiter, uint32_t *value)
 {
     (void)delimiter; // Mark as intentionally unused
-    
+
     if (response == NULL || prefix == NULL || value == NULL)
     {
         return UAT_PARSE_NULL_ARG;
@@ -395,27 +469,29 @@ uAT_ParseResult_t uAT_ParseHex(const char *response, const char *prefix,
     // Move past the prefix
     start += strlen(prefix);
 
-    // Skip any whitespace
-    while (*start == ' ' || *start == '\t')
+    // Skip any whitespace with bounds checking
+    const char *end_of_response = response + strlen(response);
+    while (start < end_of_response && (*start == ' ' || *start == '\t'))
     {
         start++;
     }
 
     // Check for "0x" or "0X" prefix and skip it if present
-    if (start[0] == '0' && (start[1] == 'x' || start[1] == 'X'))
+    if (start + 1 < end_of_response && start[0] == '0' && (start[1] == 'x' || start[1] == 'X'))
     {
         start += 2;
     }
 
     // Check if we have a valid hex digit
-    if (*start == '\0' || !isxdigit((unsigned char)*start))
+    if (start >= end_of_response || !isxdigit((unsigned char)*start))
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
 
-    // Convert the string to a hex value
+    // Convert the string to a hex value with overflow checking
     char *end;
-    *value = (uint32_t)strtoul(start, &end, 16);
+    errno = 0;
+    unsigned long temp = strtoul(start, &end, STRTOL_BASE_16);
 
     // Check if conversion was successful
     if (end == start)
@@ -423,6 +499,24 @@ uAT_ParseResult_t uAT_ParseHex(const char *response, const char *prefix,
         return UAT_PARSE_INVALID_FORMAT;
     }
 
+    // Check for overflow
+    if (errno == ERANGE || temp > UINT32_MAX)
+    {
+        return UAT_PARSE_OVERFLOW;
+    }
+
+    // Validate that there are no unexpected characters after the number
+    while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')
+    {
+        end++;
+    }
+
+    if (*end != '\0' && *end != delimiter)
+    {
+        return UAT_PARSE_INVALID_FORMAT;
+    }
+
+    *value = (uint32_t)temp;
     return UAT_PARSE_OK;
 }
 
@@ -452,29 +546,29 @@ uAT_ParseResult_t uAT_ParseString(const char *response, const char *prefix,
     {
         return UAT_PARSE_PREFIX_NOT_FOUND;
     }
-    
+
     // Move past the prefix
     start += strlen(prefix);
-    
+
     // Skip any whitespace
     while (*start == ' ' || *start == '\t')
     {
         start++;
     }
-    
+
     // Check if we have a valid string
     if (*start == '\0')
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
-    
+
     // Find the end of the string (newline, carriage return, or null terminator)
     const char *end = start;
     while (*end != '\0' && *end != '\r' && *end != '\n')
     {
         end++;
     }
-    
+
     // Calculate string length
     size_t length = end - start;
     if (length >= bufferSize)
@@ -485,7 +579,7 @@ uAT_ParseResult_t uAT_ParseString(const char *response, const char *prefix,
         buffer[length] = '\0'; // Ensure null termination
         return UAT_PARSE_BUFFER_TOO_SMALL;
     }
-    
+
     // Copy the string to the buffer
     memcpy(buffer, start, length);
     buffer[length] = '\0'; // Ensure null termination
@@ -519,38 +613,45 @@ uAT_ParseResult_t uAT_ParseQuotedString(const char *response, const char *prefix
     {
         return UAT_PARSE_PREFIX_NOT_FOUND;
     }
-    
+
     // Move past the prefix
     start += strlen(prefix);
-    
-    // Skip any whitespace
-    while (*start == ' ' || *start == '\t')
+
+    // Calculate the maximum length to prevent buffer overruns
+    const char *end_of_response = response + strlen(response);
+
+    // Skip any whitespace with bounds checking
+    while (start < end_of_response && (*start == ' ' || *start == '\t'))
     {
         start++;
     }
-    
+
     // Check if we have a quoted string
-    if (*start != '"')
+    if (start >= end_of_response || *start != '"')
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
-    
+
     // Move past the opening quote
     start++;
-    
-    // Find the closing quote
+
+    // Find the closing quote with bounds checking
     const char *end = start;
-    while (*end != '\0' && *end != '"')
+    size_t max_scan = 1024; // Reasonable maximum to prevent infinite loops
+    size_t scanned = 0;
+
+    while (end < end_of_response && *end != '"' && scanned < max_scan)
     {
         end++;
+        scanned++;
     }
-    
+
     // Check if we found a closing quote
-    if (*end != '"')
+    if (end >= end_of_response || *end != '"')
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
-    
+
     // Calculate string length
     size_t length = end - start;
     if (length >= bufferSize)
@@ -561,7 +662,7 @@ uAT_ParseResult_t uAT_ParseQuotedString(const char *response, const char *prefix
         buffer[length] = '\0'; // Ensure null termination
         return UAT_PARSE_BUFFER_TOO_SMALL;
     }
-    
+
     // Copy the string to the buffer
     memcpy(buffer, start, length);
     buffer[length] = '\0'; // Ensure null termination
@@ -702,10 +803,10 @@ uAT_ParseResult_t uAT_ParseIPAddress(const char *response, const char *prefix,
     {
         return UAT_PARSE_PREFIX_NOT_FOUND;
     }
-    
+
     // Move past the prefix
     start += strlen(prefix);
-    
+
     // Skip any whitespace
     while (*start == ' ' || *start == '\t')
     {
@@ -718,7 +819,7 @@ uAT_ParseResult_t uAT_ParseIPAddress(const char *response, const char *prefix,
     int digits = 0;
     int octet_value = 0;
     bool valid = true;
-    
+
     while (*ptr != '\0' && *ptr != '\r' && *ptr != '\n' && *ptr != ' ' && valid)
     {
         if (*ptr == '.')
@@ -762,14 +863,14 @@ uAT_ParseResult_t uAT_ParseIPAddress(const char *response, const char *prefix,
     {
         return UAT_PARSE_INVALID_FORMAT;
     }
-    
+
     // Calculate IP address string length
     size_t length = ptr - start;
     if (length >= bufferSize)
     {
         return UAT_PARSE_BUFFER_TOO_SMALL;
     }
-    
+
     // Copy the IP address to the buffer
     memcpy(buffer, start, length);
     buffer[length] = '\0'; // Ensure null termination
