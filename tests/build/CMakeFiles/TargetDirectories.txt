@@ -1,9 +1,0 @@
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/test_framework.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/uat_mocks.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/uat_parser_lib.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/test_parser.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/uat_freertos_lib.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/test_freertos.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/test.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/edit_cache.dir
-/home/runner/work/uAT/uAT/tests/build/CMakeFiles/rebuild_cache.dir

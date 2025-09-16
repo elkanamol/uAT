@@ -1,1 +1,0 @@
-/usr/bin/cc  -Wall -Wextra -g -O0 -Wl,--dependency-file=CMakeFiles/test_freertos.dir/link.d CMakeFiles/test_freertos.dir/test_freertos.c.o -o test_freertos  libuat_freertos_lib.a libuat_mocks.a libtest_framework.a

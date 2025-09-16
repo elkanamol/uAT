@@ -1,1 +1,0 @@
-/usr/bin/cc  -Wall -Wextra -g -O0 -Wl,--dependency-file=CMakeFiles/test_parser.dir/link.d CMakeFiles/test_parser.dir/test_parser.c.o -o test_parser  libuat_parser_lib.a libtest_framework.a
