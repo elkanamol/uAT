@@ -1,0 +1,2 @@
+/usr/bin/ar qc libuat_freertos_lib.a CMakeFiles/uat_freertos_lib.dir/home/runner/work/uAT/uAT/Core/Src/uat_freertos.c.o
+/usr/bin/ranlib libuat_freertos_lib.a

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtest_framework.a CMakeFiles/test_framework.dir/framework/test_framework.c.o
+/usr/bin/ranlib libtest_framework.a

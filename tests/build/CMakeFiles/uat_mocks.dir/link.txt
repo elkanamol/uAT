@@ -1,0 +1,2 @@
+/usr/bin/ar qc libuat_mocks.a CMakeFiles/uat_mocks.dir/mocks/stm32_hal_mock.c.o CMakeFiles/uat_mocks.dir/mocks/freertos_mock.c.o
+/usr/bin/ranlib libuat_mocks.a
