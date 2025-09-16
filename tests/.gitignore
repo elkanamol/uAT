@@ -1,0 +1,26 @@
+# Build artifacts
+build/
+debug_test*
+debug_intarray*
+
+# Test binaries
+test_parser
+test_freertos
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Test results
+Testing/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

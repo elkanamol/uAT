@@ -1,5 +1,7 @@
 # uAT - UART AT Command Framework for STM32
 
+[![Tests](https://github.com/elkanamol/uAT/actions/workflows/tests.yml/badge.svg)](https://github.com/elkanamol/uAT/actions/workflows/tests.yml)
+
 ## Description
 uAT is a lightweight, FreeRTOS-friendly AT command parser for STM32 microcontrollers. It provides a robust interface for communicating with modems or other devices that use AT command sets. The implementation supports both DMA and interrupt-driven UART communication, offering efficient handling of asynchronous command responses with minimal CPU overhead.
 
