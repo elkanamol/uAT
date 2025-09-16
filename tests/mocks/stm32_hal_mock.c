@@ -35,6 +35,24 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData,
     return mock_hal_status;
 }
 
+void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
+{
+    (void)huart;
+    // No-op in test environment
+}
+
+HAL_StatusTypeDef HAL_UART_AbortReceive(UART_HandleTypeDef *huart)
+{
+    (void)huart;
+    return mock_hal_status;
+}
+
+HAL_StatusTypeDef HAL_UART_AbortTransmit(UART_HandleTypeDef *huart)
+{
+    (void)huart;
+    return mock_hal_status;
+}
+
 uint32_t HAL_GetTick(void)
 {
     return mock_tick++;

@@ -156,3 +156,22 @@ void vTaskDelay(TickType_t xTicksToDelay)
     (void)xTicksToDelay;
     // No-op in test environment
 }
+
+void vTaskSetTimeOutState(TimeOut_t *pxTimeOut)
+{
+    (void)pxTimeOut;
+    // No-op in test environment
+}
+
+BaseType_t xTaskCheckForTimeOut(TimeOut_t *pxTimeOut, TickType_t *pxTicksToWait)
+{
+    (void)pxTimeOut;
+    (void)pxTicksToWait;
+    return pdFALSE; // Never timeout in tests
+}
+
+void xStreamBufferReset(StreamBufferHandle_t xStreamBuffer)
+{
+    (void)xStreamBuffer;
+    // No-op in test environment
+}

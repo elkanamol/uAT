@@ -17,6 +17,9 @@ typedef uint32_t UBaseType_t;
 typedef void* TaskHandle_t;
 typedef void* SemaphoreHandle_t;
 typedef void* StreamBufferHandle_t;
+typedef struct {
+    uint32_t dummy;
+} TimeOut_t;
 
 // Mock constants
 #define pdTRUE                    (1)
@@ -47,6 +50,11 @@ BaseType_t xSemaphoreGiveFromISR(SemaphoreHandle_t xSemaphore, BaseType_t *pxHig
 // Mock task functions
 BaseType_t xTaskCreate(void (*pxTaskCode)(void *), const char *pcName, uint16_t usStackDepth, void *pvParameters, UBaseType_t uxPriority, TaskHandle_t *pxCreatedTask);
 void vTaskDelay(TickType_t xTicksToDelay);
+void vTaskSetTimeOutState(TimeOut_t *pxTimeOut);
+BaseType_t xTaskCheckForTimeOut(TimeOut_t *pxTimeOut, TickType_t *pxTicksToWait);
+
+// Mock stream buffer functions (additional)
+void xStreamBufferReset(StreamBufferHandle_t xStreamBuffer);
 
 // Mock control variables for testing
 extern bool mock_freertos_init_success;
